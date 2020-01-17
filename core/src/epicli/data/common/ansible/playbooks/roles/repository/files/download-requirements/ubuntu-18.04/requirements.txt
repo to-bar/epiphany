@@ -76,7 +76,8 @@ libxtst6
 fontconfig-config
 
 # for openjdk-11-jre-headless
-liboss4-salsa-asound2
+libasound2
+libasound2-data
 
 python-apt
 
