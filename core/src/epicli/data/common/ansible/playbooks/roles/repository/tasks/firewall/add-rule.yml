@@ -10,6 +10,10 @@
       changed_when: false
       failed_when: query_result.rc not in [0, 1] # 0 means service rule exists
 
+    - name: Set query result as fact
+      set_fact:
+        firewall_rule_exists: "{{ true if query_result.rc == 0 else false }}"
+
     - name: Add temporary firewall rule
       block:
         - name: Save name of modified zone to file for persistence
@@ -32,7 +36,7 @@
                   {{ '/etc/firewalld/zones' if current_zone_config_file_stat.stat.exists
                                             else '/usr/lib/firewalld/zones' }}
 
-            - name: Create {{ zone_config_backup_dest_dir }} directory
+            - name: Create directory {{ zone_config_backup_dest_dir }}
               file:
                 path: "{{ zone_config_backup_dest_dir }}"
                 state: directory
@@ -51,9 +55,8 @@
           shell: firewall-cmd --add-service=http --zone={{ current_zone }} --permanent &&
                  firewall-cmd --add-service=http --zone={{ current_zone }}
           args:
-            creates: "{{ firewall_rule_added_flag_file }}"
+            creates: "{{ repo_firewall_rule_added_flag_file }}"
       when:
-        - query_result.rc == 1 # service rule does not exist
+        - not firewall_rule_exists
   when:
-    - firewall_state == 'running'
-    - current_zone is defined
+    - firewall_running

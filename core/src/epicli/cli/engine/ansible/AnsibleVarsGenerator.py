@@ -13,7 +13,7 @@ from cli.helpers.data_loader import load_yaml_obj, types, load_all_documents_fro
 
 class AnsibleVarsGenerator(Step):
 
-    def __init__(self, inventory_creator=None,  inventory_upgrade=None):
+    def __init__(self, inventory_creator=None, inventory_upgrade=None):
         super().__init__(__name__)
 
         self.inventory_creator = inventory_creator
@@ -27,6 +27,16 @@ class AnsibleVarsGenerator(Step):
             self.config_docs = load_all_documents_from_folder('common', 'defaults/configuration')
         else:
             raise Exception('Invalid AnsibleVarsGenerator configuration')
+
+        if inventory_creator == None:
+            # For upgrade at this point we don't need any of other roles then
+            # common, upgrade, repository and image_registry.
+            # - commmon is already provisioned from the cluster model constructed from the inventory.
+            # - upgrade should not require any additional config
+            # roles in the list below are provisioned for upgrade from defaults
+            self.enabled_roles = ['repository', 'image_registry']
+        else:
+            self.enabled_roles = inventory_creator.get_enabled_roles()
 
     def __enter__(self):
         super().__enter__()
@@ -49,17 +59,7 @@ class AnsibleVarsGenerator(Step):
         with open(cluster_config_file_path, 'w') as stream:
             dump(clean_cluster_model, stream)
 
-        if self.inventory_creator == None:
-            # For upgrade at this point we don't need any of other roles then
-            # common, upgrade, repository and image_registry.
-            # - commmon is already provisioned from the cluster model constructed from the inventory.
-            # - upgrade should not require any additional config
-            # roles in the list below are provisioned for upgrade from defaults
-            enabled_roles = ['repository', 'image_registry']
-        else:
-            enabled_roles = self.inventory_creator.get_enabled_roles()
-
-        for role in enabled_roles:
+        for role in self.enabled_roles:
             document = select_first(self.config_docs, lambda x: x.kind == 'configuration/'+to_feature_name(role))
 
             if document is None:
@@ -78,7 +78,7 @@ class AnsibleVarsGenerator(Step):
         vars_file_path = os.path.join(vars_dir, vars_file_name)
 
         with open(vars_file_path, 'w') as stream:
-            dump(document, stream)       
+            dump(document, stream)
 
     def populate_group_vars(self, ansible_dir):
         main_vars = ObjDict()
@@ -86,6 +86,7 @@ class AnsibleVarsGenerator(Step):
         main_vars['validate_certs'] = Config().validate_certs
         main_vars['offline_requirements'] = Config().offline_requirements
         main_vars['wait_for_pods'] = Config().wait_for_pods
+        main_vars['epiphany_enabled_roles'] = self.enabled_roles
 
         shared_config_doc = select_first(self.config_docs, lambda x: x.kind == 'configuration/shared-config')
         if shared_config_doc == None:
