@@ -8,7 +8,7 @@
 {% endif %}
 {# ssh service is hard-coded by purpose - to be always allowed #}
   <service name="ssh"/>
-{% if inventory_hostname in groups['repository'] and specification.firewall_service_enabled %}
+{% if specification.firewall_enabled and 'repository' in group_names and (not custom_repository_url) %}
 <!-- BEGIN ANSIBLE MANAGED TEMPORARY BLOCK -->
   <!-- http service is added temporarily for epirepo and removed at the end of installation -->
   <service name="http"/>
@@ -17,7 +17,7 @@
 {% for item in ports_to_open %}
   <port protocol="{{ item.protocol }}" port="{{ item.range }}"/>
 {% endfor %}
-{% if inventory_hostname in groups['kubernetes_master'] or inventory_hostname in groups['kubernetes_node'] %}
+{% if group_names | intersect(['kubernetes_master', 'kubernetes_node']) | count > 0 %}
   <masquerade/>
 {% endif %}
 </zone>

@@ -2,5 +2,11 @@
 - name: Include installation tasks ({{ ansible_os_family }})
   include_tasks: "{{ ansible_os_family }}/install-firewall.yml"
 
+- name: Check if firewalld is installed
+  package_facts:
+    manager: auto
+
 - name: Include configuration tasks
   include_tasks: configure-firewall.yml
+  when:
+    - "'firewalld' in ansible_facts.packages"

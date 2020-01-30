@@ -13,7 +13,7 @@
         tee /tmp/epi-repository-setup-scripts/create-repository.log
 
     - name: Ensure HTTP port is not blocked by firewall
-      include_tasks: firewall/add-rule.yml
+      include_tasks: firewall/allow-connections.yml
 
     - name: Ensure httpd is running
       service:

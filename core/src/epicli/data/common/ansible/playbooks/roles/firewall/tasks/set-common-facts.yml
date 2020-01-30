@@ -1,0 +1,44 @@
+---
+# Sets common firewall facts
+
+- name: Get firewall state
+  shell: firewall-cmd --state
+  register: firewall_state
+  changed_when: false
+  failed_when: firewall_state.rc not in [0, 127, 252] # 127 => not found, 252 => not running
+
+- name: Set firewall state as fact
+  set_fact:
+    firewall_running: "{{ true if firewall_state.stdout == 'running' else false }}"
+
+- name: Print firewall state
+  debug:
+    var: firewall_running
+
+- name: Get zone of default network interface
+  block:
+    - name: Get zone of default network interface ({{ ansible_default_ipv4.interface }})
+      command: firewall-cmd --get-zone-of-interface {{ ansible_default_ipv4.interface }}
+      register: default_interface_zone
+      changed_when: false
+      failed_when:
+        - default_interface_zone.rc != 0
+        - default_interface_zone.stderr != 'no zone'
+
+    - name: Get default zone
+      command: firewall-cmd --get-default-zone
+      register: default_zone
+      changed_when: false
+      when: # 'no zone' on Ubuntu means the default zone (public) is used implicitly
+        - default_interface_zone.stderr == 'no zone'
+
+    - name: Set zone of default network interface as fact
+      set_fact:
+        current_zone: "{{ default_interface_zone.stdout if (default_interface_zone.stdout | length > 0)
+                                                        else default_zone.stdout }}"
+
+    - name: Print zone of default network interface
+      debug:
+        var: current_zone
+  when:
+    - firewall_running

@@ -1,0 +1,66 @@
+---
+# Updates list of temporary modified zones, requires 'modified_zone' variable.
+# The list is stored in file for persistence.
+
+# Structure of required variable:
+
+# modified_zone:
+#   name: public
+#   modified_by_role: repository
+#   backup_path: /var/tmp/epiphany/firewall/public.xml.bak # optional
+
+# Sample list structure:
+
+# public:
+#   backup_path: /var/tmp/epiphany/firewall/public.xml.bak
+#   modified_by_roles:
+#     - repository
+#     - firewall
+# epiphany:
+#   modified_by_roles:
+#     - firewall
+
+- name: Check if file with modified zones exists
+  stat:
+    path: "{{ epiphany_tmp_persistent_dir }}/firewall/temporarily-modified-zones.yml"
+  register: modified_zones_file_stat
+
+- name: Load list of temporary modified zones
+  block:
+    - name: Load file with modified zones
+      slurp:
+        src: "{{ epiphany_tmp_persistent_dir }}/firewall/temporarily-modified-zones.yml"
+      register: modified_zones_yml
+
+    - name: Load list of temporary modified zones
+      set_fact:
+        modified_zones: "{{ modified_zones_yml.content | b64decode | from_yaml }}"
+  when:
+    - modified_zones_file_stat.stat.exists
+
+- name: Ensure destination directory exists
+  file:
+    path: "{{ epiphany_tmp_persistent_dir }}/firewall"
+    state: directory
+    mode: 0750
+    owner: "{{ admin_user.name }}"
+    group: "{{ admin_user.name }}"
+
+- name: Prepare zone item to be saved
+  set_fact:
+    zone_item: "{{ { 'modified_by_roles': modified_by_roles }
+                    | combine( {'backup_path': backup_path} if (backup_path | count > 0) else {} ) }}"
+  vars:
+    zone_name: "{{ modified_zone.name }}"
+    modified_by: "{{ modified_zone.modified_by_role }}"
+    modified_by_roles: >-
+      {{ [modified_by] if modified_zones[zone_name] is undefined
+                       else (modified_zones[zone_name].modified_by_roles + [modified_by]) | unique }}
+    backup_path: "{{ modified_zone.backup_path if modified_zone.backup_path is defined else None }}"
+
+- name: Update list of temporary modified zones and save to file
+  copy:
+    content: "{{ content_to_save | to_nice_yaml(indent=2) }}"
+    dest: "{{ epiphany_tmp_persistent_dir }}/firewall/temporarily-modified-zones.yml"
+  vars:
+    content_to_save: "{{ modified_zones | default({}) | combine({ modified_zone.name: zone_item }) }}"

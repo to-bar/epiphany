@@ -1,0 +1,10 @@
+---
+- name: Set firewall facts
+  import_role:
+    name: firewall
+    tasks_from: set-common-facts
+
+- name: Ensure firewall allows connections to repository
+  include_tasks: firewall/add-rule.yml
+  when:
+    - firewall_running

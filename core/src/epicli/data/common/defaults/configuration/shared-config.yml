@@ -5,6 +5,7 @@ specification:
   custom_repository_url: '' # leave it empty to use local repository or provide url to your repo
   custom_image_registry_address: '' # leave it empty to use local registry or provide address of your registry (hostname:port). This registry will be used to populate K8s control plane and should contain all required images.
   download_directory: /tmp # directory where files and images will be stored just before installing/loading
+  epiphany_tmp_persistent_dir: /var/tmp/epiphany # for temporary files that must be preserved between system reboots
   vault_location: '' # if empty "BUILD DIRECTORY/vault" will be used
   vault_tmp_file_location: SET_BY_AUTOMATION
   architecture_map:

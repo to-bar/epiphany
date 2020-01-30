@@ -1,0 +1,41 @@
+---
+# Helper tasks to back up zone configuration file.
+# This file assumes that common firewall facts are already set.
+# Requires 'zone_to_backup' variable. Existing backups are not overwritten.
+
+- name: Check if zone backup already exists
+  stat:
+    path: "{{ epiphany_tmp_persistent_dir }}/firewall/{{ zone_to_backup }}.xml.bak"
+  register: zone_backup_file_stat
+
+- name: Backup zone configuration file
+  block:
+    - name: Check if zone configuration file exists in etc # may not exist unless zone was modified
+      stat:
+        path: /etc/firewalld/zones/{{ zone_to_backup }}.xml
+      register: zone_config_file_stat
+
+    - name: Set location of zone configuration file
+      set_fact:
+        zone_config_file_path: "{{ zone_config_file_dir }}/{{ zone_to_backup }}.xml"
+      vars:
+        zone_config_file_dir: >-
+          {{ '/etc/firewalld/zones' if zone_config_file_stat.stat.exists
+                                    else '/usr/lib/firewalld/zones' }}
+
+    - name: Create directory {{ epiphany_tmp_persistent_dir }}/firewall
+      file:
+        path: "{{ epiphany_tmp_persistent_dir }}/firewall"
+        state: directory
+        mode: 0750
+        owner: "{{ admin_user.name }}"
+        group: "{{ admin_user.name }}"
+
+    - name: Backup configuration file of {{ zone_to_backup }} zone
+      copy:
+        src: "{{ zone_config_file_path }}"
+        dest: "{{ epiphany_tmp_persistent_dir }}/firewall/{{ zone_to_backup }}.xml.bak"
+        remote_src: yes
+        mode: 0644
+  when:
+    - not zone_backup_file_stat.stat.exists

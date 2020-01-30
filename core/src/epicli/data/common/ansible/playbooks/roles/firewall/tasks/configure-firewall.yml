@@ -1,5 +1,7 @@
 ---
-- name: Configure Epiphany managed firewall zone
+# Note: Configuration is always applied for idempotency
+
+- name: Copy configuration of Epiphany managed firewall zone
   block:
     - name: Set roles with enabled firewall rules as fact
       set_fact:
@@ -50,8 +52,19 @@
       vars:
         zone_file_name: "{{ specification.managed_zone_name | lower }}.xml"
         zone_file_path: /etc/firewalld/zones/{{ zone_file_name }}
-  when:
-    - specification.apply_configuration
+
+    # Save zone in file containing list of temporarily modified zones
+    # only if configuration file contains temporary rule for epirepo
+    - name: Add current zone to list of temporarily modified zones
+      include_tasks: update-modified-zones-list.yml
+      vars:
+        modified_zone:
+          name: "{{ specification.managed_zone_name | lower }}"
+          modified_by_role: firewall
+      when:
+        - specification.firewall_enabled
+        - "'repository' in group_names"
+        - not custom_repository_url
 
 # For next tasks firewalld service has to be running (to reload firewall rules or bind network interface to zone)
 
@@ -59,10 +72,8 @@
   systemd:
     name: firewalld
     state: started
-    enabled: "{{ specification.firewall_service_enabled }}"
+    enabled: "{{ specification.firewall_enabled }}"
     masked: no
-  when: specification.firewall_service_enabled
-     or specification.apply_configuration
 
 - name: Reload firewalld to apply permanent configuration to runtime
   command: firewall-cmd --reload
@@ -127,7 +138,6 @@
           changed_when: false
       when: default_interface_zone.stdout != specification.managed_zone_name
          or not explicit_zone_binding_found
-  when: specification.apply_configuration
 
 # The following block was added because rabbitmq on K8s worked only if cni0 interface (flannel)
 # was bound to zone with enabled masquerading (TODO: analysis is needed).
@@ -144,18 +154,8 @@
       register: change_default_zone
       when: default_zone_name.stdout != specification.managed_zone_name
   when:
-    - specification.apply_configuration
-    - (groups['kubernetes_master'] is defined and inventory_hostname in groups['kubernetes_master'])
-      or (groups['kubernetes_node'] is defined and inventory_hostname in groups['kubernetes_node'])
-
-- name: Get service facts
-  service_facts:
-
-- name: Print firewalld.service state
-  debug:
-    var: ansible_facts.services['firewalld.service']
-  when:
-    - ansible_facts.services['firewalld.service'] is defined
+    - specification.firewall_enabled
+    - "'kubernetes_master' in group_names or 'kubernetes_node' in group_names"
 
 - name: Stop, disable and mask firewalld service
   block:
@@ -172,16 +172,14 @@
         name: firewalld
         masked: yes
   when:
-    - not specification.firewall_service_enabled
-    - ansible_facts.services['firewalld.service'] is defined
+    - not specification.firewall_enabled
 
 - name: Get firewall state
   shell: firewall-cmd --state 2>&1
   register: firewall_state
   changed_when: false
-  failed_when: firewall_state.rc not in [0, 127, 252] # 252 means not running
+  failed_when: firewall_state.rc not in [0, 252] # 252 => not running
 
 - name: Print firewall state
   debug:
-    var: firewall_state.stdout
-  when: firewall_state.rc in [0, 252]
+    msg: "{{ firewall_state.stdout }}"

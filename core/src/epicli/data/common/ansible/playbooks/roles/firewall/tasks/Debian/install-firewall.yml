@@ -23,17 +23,16 @@
         state: present
       register: install_firewalld
 
-    - name: Stop and mask service for consistency with RHEL
+    - name: Stop, disable and mask service
       block:
         # On Ubuntu firewalld service starts automatically after installing package
         # Stop to avoid unexpected blocking and for consistency with RHEL
-        - name: Stop firewalld service
+        - name: Stop and disable firewalld service
           systemd:
             name: firewalld
             state: stopped
             enabled: no
 
-        # On RHEL firewalld service is initially masked, so mask it for consistency
         # This task is separated by purpose to mask service AFTER it was stopped
         - name: Mask firewalld service
           systemd:
