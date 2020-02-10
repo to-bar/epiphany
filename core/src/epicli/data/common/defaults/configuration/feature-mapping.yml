@@ -55,6 +55,8 @@ specification:
       enabled: yes
     - name: ignite
       enabled: yes
+    - name: storage
+      enabled: yes
 
   roles_mapping:
     kafka:
@@ -137,6 +139,11 @@ specification:
       - firewall
     opendistro_for_elasticsearch:
       - opendistro-for-elasticsearch
+      - node-exporter
+      - filebeat
+      - firewall
+    storage:
+      - storage
       - node-exporter
       - filebeat
       - firewall
