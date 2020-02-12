@@ -55,7 +55,7 @@ specification:
       enabled: yes
     - name: ignite
       enabled: yes
-    - name: storage
+    - name: nfs
       enabled: yes
 
   roles_mapping:
@@ -142,8 +142,8 @@ specification:
       - node-exporter
       - filebeat
       - firewall
-    storage:
-      - storage
+    nfs:
+      - nfs
       - node-exporter
       - filebeat
       - firewall
