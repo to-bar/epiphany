@@ -1,0 +1,6 @@
+---
+- name: Include NFS server installation tasks
+  include_tasks: install-nfs.yml
+
+- name: Include NFS server configuration tasks
+  include_tasks: configure-nfs.yml

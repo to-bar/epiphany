@@ -712,7 +712,7 @@ specification:
 kind: infrastructure/virtual-machine
 title: "Virtual Machine Infra"
 provider: azure
-name: nfs-machine
+name: nfs-server-machine
 specification:
   size: Standard_DS1_v2
   security:
@@ -745,6 +745,16 @@ specification:
         protocol: Tcp
         source_port_range: "*"
         destination_port_range: "9100"
+        source_address_prefix: "10.1.0.0/20"
+        destination_address_prefix: "0.0.0.0/0"
+      - name: nfs_server
+        description: Allow traffic to NFS server
+        priority: 201
+        direction: Inbound
+        access: Allow
+        protocol: Tcp
+        source_port_range: "*"
+        destination_port_range: "2049"
         source_address_prefix: "10.1.0.0/20"
         destination_address_prefix: "0.0.0.0/0"
 ---

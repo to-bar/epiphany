@@ -796,14 +796,14 @@ specification:
 kind: infrastructure/virtual-machine
 title: "Virtual Machine Infra"
 provider: aws
-name: nfs-machine
+name: nfs-server-machine
 specification:
   size: t3.medium
   authorized_to_efs: true
   security:
     rules:
       - name: ssh
-        description: Allow ssh traffic
+        description: Allow SSH traffic
         priority: 101
         direction: Inbound
         access: Allow
@@ -822,6 +822,16 @@ specification:
         destination_port_range: "9100"
         source_address_prefix: "10.1.0.0/20"
         destination_address_prefix: "0.0.0.0/0"
+      - name: nfs-traffic
+        description: Allow traffic to NFS server
+        priority: 303
+        direction: Inbound
+        access: Allow
+        protocol: Tcp
+        source_port_range: "*"
+        destination_port_range: "2049"
+        source_address_prefix: "10.1.0.0/20"
+        destination_address_prefix: "0.0.0.0/0"
       - name: out
         description: Allow out
         priority: 101
@@ -831,16 +841,6 @@ specification:
         source_port_range: "*"
         destination_port_range: "0"
         source_address_prefix: "0.0.0.0/0"
-        destination_address_prefix: "0.0.0.0/0"
-      - name: nfs-traffic
-        description: Allow traffic to nfs server
-        priority: 303
-        direction: Inbound
-        access: Allow
-        protocol: Tcp
-        source_port_range: "*"
-        destination_port_range: "2049"
-        source_address_prefix: "10.1.0.0/20"
         destination_address_prefix: "0.0.0.0/0"
 ---
 kind: infrastructure/virtual-machine

@@ -1,0 +1,4 @@
+---
+nfs_service_name:
+  Debian: nfs-kernel-server
+  RedHat: nfs

@@ -1,0 +1,8 @@
+kind: configuration/nfs-server
+title: "NFS Server Config"
+name: default
+specification:
+  nfs_exports: # list of NFS definitions to be created in /etc/exports
+    - export_directory: "/srv/nfs4/nfs_share" # directory to export, client mountable path (typically in /srv/nfs)
+      shared_directory: "/nfs_share" # directory (on the server) to bind mount under 'export_directory'
+      sharing_options: "*(rw,sync,no_subtree_check,no_root_squash)" # host(s) or network to which the export is shared

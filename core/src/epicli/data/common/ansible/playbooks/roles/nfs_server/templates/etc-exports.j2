@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+
+{% for nfs_export in specification.nfs_exports %}
+{{ nfs_export.export_directory }} {{ nfs_export.sharing_options }}
+{% endfor %}

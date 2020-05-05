@@ -94,9 +94,9 @@ specification:
       subnets:
         - availability_zone: eu-west-2a
           address_pool: 10.1.10.0/24
-    nfs:
+    nfs_server:
       count: 0
-      machine: nfs-machine
+      machine: nfs-server-machine
       configuration: default
       subnets:
         - availability_zone: eu-west-2a

@@ -1,0 +1,8 @@
+---
+# Ansible playbook that installs and configures NFS server
+
+- hosts: nfs_server
+  become: true
+  become_method: sudo
+  roles:
+    - nfs_server

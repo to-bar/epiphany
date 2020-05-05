@@ -1,0 +1,3 @@
+---
+- name: Install NFS ({{ ansible_os_family }})
+  include_tasks: "{{ ansible_os_family }}.yml"
