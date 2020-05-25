@@ -1,0 +1,33 @@
+# {{ ansible_managed }}
+
+{# TODO: review and refactor content - nice to have the same settings for both distros #}
+{% if ansible_os_family == 'RedHat' %}
+{# Content based on krb5-server-1.15.1 package #}
+[kdcdefaults]
+    kdc_ports = 88
+    kdc_tcp_ports = 88
+
+[realms]
+    {{ kerberos_realm }} = {
+        acl_file = /var/kerberos/krb5kdc/kadm5.acl
+        dict_file = /usr/share/dict/words
+        supported_enctypes = aes256-cts:normal aes128-cts:normal
+    }
+{% else %}
+{# Ubuntu, content based on krb5-kdc package (v1.16) #}
+[kdcdefaults]
+    kdc_ports = 750,88
+
+[realms]
+    {{ kerberos_realm }} = {
+        database_name = /var/lib/krb5kdc/principal
+        acl_file = /etc/krb5kdc/kadm5.acl
+        key_stash_file = /etc/krb5kdc/stash
+        kdc_ports = 750,88
+{# TODO: check defaults for max_life and max_renewable_life #}
+        max_life = 10h 0m 0s
+        max_renewable_life = 7d 0h 0m 0s
+        supported_enctypes = aes256-cts:normal aes128-cts:normal
+        default_principal_flags = +preauth
+    }
+{% endif %}

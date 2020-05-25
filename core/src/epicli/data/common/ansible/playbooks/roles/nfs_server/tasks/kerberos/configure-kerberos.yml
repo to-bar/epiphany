@@ -1,0 +1,66 @@
+---
+# TODO: Add check/ensure domain is defined (on-prem ansible_domain may contain empty string)
+# TODO: Add time synchronization (NTP) to Epiphany prerequisites (Kerberos permits only small differences in the system times of the server and its clients)
+
+- name: Copy configuration files
+  block:
+    - name: Copy krb5.conf
+      template:
+        src: krb5.conf.j2
+        dest: /etc/krb5.conf
+        owner: root
+        group: root
+        mode: u=rw,go=r
+        backup: yes
+      register: copy_krb5_conf
+
+    - name: Copy kdc.conf
+      template:
+        src: kdc.conf.j2
+        dest: "{{ kerberos.paths.kdc_conf[ansible_os_family] }}"
+        owner: root
+        group: root
+        mode: u=rw,go=
+        backup: yes
+      register: copy_kdc_conf
+
+    - name: Copy kadm5.acl
+      template:
+        src: kadm5.acl.j2
+        dest: "{{ kerberos.paths.kadm5_acl[ansible_os_family] }}"
+        owner: root
+        group: root
+        mode: u=rw,go=
+        backup: yes
+      register: copy_kadm5_acl
+
+- name: Create initial Kerberos database
+  shell: kdb5_util create -s -P '{{ kerberos.master_db_password }}' -r {{ kerberos_realm }}
+  args:
+    creates: "{{ kerberos.paths.database[ansible_os_family] }}.ok"
+
+- name: Restart Kerberos services
+  service:
+    name: "{{ item }}"
+    state: restarted
+  loop: "{{ kerberos.services[ansible_os_family] }}"
+  when: copy_krb5_conf.changed or copy_kdc_conf.changed or copy_kadm5_acl.changed
+
+- name: Start Kerberos services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop: "{{ kerberos.services[ansible_os_family] }}"
+
+- name: Create principals and add them to keytab file
+  block:
+    - name: Create principals
+      include_tasks: kerberos/create-principals.yml
+
+    - name: Add principals to keytab file
+      include_tasks: kerberos/add-principals-to-default-keytab.yml
+  vars:
+    principals:
+      - root/admin # for administering Kerberos server
+      - nfs/{{ ansible_fqdn }}

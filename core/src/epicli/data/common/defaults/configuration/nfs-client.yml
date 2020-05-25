@@ -1,0 +1,10 @@
+kind: configuration/nfs-client
+title: NFS Client Config
+name: default
+specification:
+  nfs_server_host: "{{ groups.nfs_server[0] }}" # hostname from inventory (Epiphany managed host is required)
+  mounts:
+    - name: Public share
+      mount_point: /mnt/nfs_public
+      mount_options: defaults # see man fstab(5)
+      enabled: yes

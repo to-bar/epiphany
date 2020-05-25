@@ -1,0 +1,25 @@
+---
+# This file is meant to be also used by nfs_client role
+
+# Loops are used by purpose to have principals listed in Ansible output
+- name: Create principals if don't exist
+  block:
+    - name: Check if principal already exist
+      shell: >-
+        kadmin.local -q "list_principals {{ principal }}" -r {{ kerberos_realm }} | grep --only-matching '^{{ principal }}'
+      register: grep_principal_list
+      changed_when: false
+      failed_when:
+        - grep_principal_list.rc != 0
+        - grep_principal_list.stderr_lines or grep_principal_list.stdout_lines
+      loop_control:
+        loop_var: principal
+      loop: "{{ principals }}"
+
+    - name: Create principal
+      shell: kadmin.local -q "add_principal -randkey {{ principal }}" -r {{ kerberos_realm }}
+      when: grep_principal_list.results[ansible_loop.index0].stdout == ""
+      loop_control:
+        loop_var: principal
+        extended: yes
+      loop: "{{ principals }}"

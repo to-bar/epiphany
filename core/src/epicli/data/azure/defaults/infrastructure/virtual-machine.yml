@@ -757,6 +757,26 @@ specification:
         destination_port_range: "2049"
         source_address_prefix: "10.1.0.0/20"
         destination_address_prefix: "0.0.0.0/0"
+      - name: kerberos_server_udp
+        description: Allow traffic to Kerberos server (UDP)
+        priority: 202
+        direction: Inbound
+        access: Allow
+        protocol: Udp
+        source_port_range: "*"
+        destination_port_range: "88"
+        source_address_prefix: "10.1.0.0/20"
+        destination_address_prefix: "0.0.0.0/0"
+      - name: kerberos_server_tcp
+        description: Allow traffic to Kerberos server (TCP)
+        priority: 203
+        direction: Inbound
+        access: Allow
+        protocol: Tcp
+        source_port_range: "*"
+        destination_port_range: "88"
+        source_address_prefix: "10.1.0.0/20"
+        destination_address_prefix: "0.0.0.0/0"
 ---
 kind: infrastructure/virtual-machine
 title: "Virtual Machine Infra"

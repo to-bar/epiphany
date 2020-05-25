@@ -1,0 +1,5 @@
+---
+- name: Restart rpc-gssd service
+  systemd:
+    name: rpc-gssd
+    state: restarted

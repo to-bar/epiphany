@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+
+{# To apply changes, restart krb5-admin-server/kadmin service #}
+# This file is the access control list for krb5 administration.
+# One common way to set up Kerberos administration is to allow any principal
+# ending in /admin is given full administrative rights.
+
+# Format:
+# principal  permissions  [target_principal  [restrictions] ]
+
+{# Following line is based on krb5-server-1.15.1 package (RHEL) #}
+*/admin@{{ kerberos_realm }}    *

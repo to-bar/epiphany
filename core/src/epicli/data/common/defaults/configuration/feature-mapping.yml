@@ -57,6 +57,8 @@ specification:
       enabled: yes
     - name: nfs-server
       enabled: yes
+    - name: nfs-client
+      enabled: yes
 
   roles_mapping:
     kafka:
@@ -132,6 +134,7 @@ specification:
       - node-exporter
       - filebeat
       - firewall
+      - nfs-client
     ignite:
       - ignite
       - node-exporter

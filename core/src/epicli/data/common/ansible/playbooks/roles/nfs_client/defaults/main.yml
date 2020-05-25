@@ -1,0 +1,5 @@
+---
+nfs:
+  config_file_path:
+    Debian: /etc/default/nfs-common
+    RedHat: /etc/sysconfig/nfs

@@ -1,33 +1,103 @@
 ---
-- name: Generate /etc/exports file
+- name: Install Kerberos server
+  include_tasks: kerberos/install-kerberos.yml
+
+- name: Configure Kerberos server
+  include_tasks: kerberos/configure-kerberos.yml
+  vars:
+    kerberos_realm: "{{ ansible_domain | upper }}"
+
+- name: Copy exports file
   template:
-    src: etc-exports.j2
+    src: exports.j2
     dest: /etc/exports
     owner: root
     group: root
-    mode: 0644
+    mode: u=rw,go=r
     backup: yes
 
-- name: Ensure NFS directories exist
+- name: Check if directories to be exported exist
+  stat:
+    path: "{{ item }}"
+    get_attributes: no
+    get_checksum: no
+    get_mime: no
+  register: nfs_export_dirs_stat
+  when: item.enabled is undefined or item.enabled
+  loop: "{{ specification.nfs_exports }}"
+  loop_control:
+    label: "{{ item.directory }}"
+
+- name: Create directories configured to be exported if don't exist
   file:
-    path: "{{ item.shared_directory }}"
+    path: "{{ item.directory }}"
     state: directory
+    owner: "{{ nfs.anonymous.user[ansible_os_family] }}"
+    group: "{{ nfs.anonymous.group[ansible_os_family] }}"
+  when:
+    - item.enabled is undefined or item.enabled
+    - nfs_export_dirs_stat.results[ansible_loop.index0].stat.isdir is undefined
+      or not nfs_export_dirs_stat.results[ansible_loop.index0].stat.isdir
   loop: "{{ specification.nfs_exports }}"
+  loop_control:
+    label: "{{ item.directory }}"
 
-- name: Ensure NFS mounts are bound
-  mount:
-    path: "{{ item.export_directory }}"
-    src: "{{ item.shared_directory }}"
-    opts: bind
-    state: mounted
-    fstype: none
-  loop: "{{ specification.nfs_exports }}"
-
-- name: Ensure NFS is running
+# rpc.svcgssd has been deprecated since RHEL 7.0 and its use in new deployments is discouraged in favor of gssproxy.
+# Ubuntu 18.04 still uses rpc.svcgssd. We want to have gssproxy for both distros.
+- name: Disable rpc-svcgssd service
   systemd:
-    name: "{{ nfs_service_name[ansible_os_family] }}"
+    name: rpc-svcgssd
+    state: stopped
+    enabled: no
+    masked: yes
+  when: ansible_os_family == 'Debian'
+
+- name: Start gssproxy service
+  systemd:
+    name: gssproxy
     state: started
+  register: start_gssproxy
+
+- name: Adjust rpc-gssd service on Ubuntu
+  when: ansible_os_family == 'Debian'
+  block:
+    - name: Configure rpc-gssd service to start after gssproxy service
+      lineinfile:
+        path: /lib/systemd/system/rpc-gssd.service
+        line: After=gssproxy.service
+        insertafter: '^After='
+        backup: yes
+      register: configure_rpc_gssd_unit
+
+    - name: Run daemon-reload
+      # command module used by purpose since systemd module does not set changed=true for daemon-reload
+      command: systemctl daemon-reload
+      register: reload_rpc_gssd_unit
+      when: configure_rpc_gssd_unit.changed
+
+- name: Restart rpc-gssd service
+  systemd:
+    name: rpc-gssd
+    state: restarted
+  when: reload_rpc_gssd_unit.changed
+     or start_gssproxy.changed
+
+- name: Start service
+  systemd:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - rpc-gssd
+    - "{{ nfs.service[ansible_os_family] }}"
+
+- name: Enable service
+  systemd:
+    name: "{{ item }}"
     enabled: yes
+  loop:
+    - gssproxy
+    - rpc-gssd
+    - "{{ nfs.service[ansible_os_family] }}"
 
 - name: Export all entries from /etc/exports
-  command: exportfs -ra
+  command: exportfs -rav

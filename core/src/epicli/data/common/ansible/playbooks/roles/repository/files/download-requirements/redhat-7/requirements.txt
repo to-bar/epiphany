@@ -48,6 +48,8 @@ ipset # for firewalld
 java-1.8.0-openjdk-headless
 javapackages-tools # for java-1.8.0-openjdk-headless
 jq
+krb5-server
+krb5-workstation
 libini_config # for nfs-utils
 libselinux-python
 libsemanage-python
@@ -105,6 +107,7 @@ unzip
 vim-common # for vim
 vim-enhanced
 wget
+words # for krb5-server
 xorg-x11-font-utils # for grafana
 xorg-x11-server-utils # for grafana
 yum-plugin-versionlock

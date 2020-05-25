@@ -1,0 +1,50 @@
+# {{ ansible_managed }}
+
+{# TODO: review - nice to have the same settings for both distros #}
+{% if ansible_os_family == 'RedHat' %}
+# Configuration snippets may be placed in this directory as well
+includedir /etc/krb5.conf.d/
+
+{% endif %}
+[libdefaults]
+    default_realm = {{ kerberos_realm }}
+
+# Added by Epiphany team
+    dns_lookup_realm = false
+    dns_lookup_kdc = false
+
+{% if ansible_os_family == 'Debian' %}
+# Defaults from krb5-config package (v2.6, Ubuntu 18.04)
+    kdc_timesync = 1
+    ccache_type = 4
+    forwardable = true
+    proxiable = true
+    fcc-mit-ticketflags = true
+{% endif %}
+{% if ansible_os_family == 'RedHat' %}
+# Defaults from krb5-libs-1.15.1 package (RHEL 7)
+    dns_lookup_realm = false
+    ticket_lifetime = 24h
+    renew_lifetime = 7d
+    forwardable = true
+    rdns = false
+    pkinit_anchors = FILE:/etc/pki/tls/certs/ca-bundle.crt
+    default_ccache_name = KEYRING:persistent:%{uid}
+{% endif %}
+
+[realms]
+{{ kerberos_realm }} = {
+    kdc = {{ ansible_fqdn }}
+    admin_server = {{ ansible_fqdn }}
+}
+
+[domain_realm]
+{% if ansible_domain | length %}
+    .{{ ansible_domain }} = {{ kerberos_realm }}
+{% endif %}
+
+{# TODO: check logs on Ubuntu, the following settings are based on RedHat #}
+[logging]
+    default = FILE:/var/log/krb5-libs.log
+    kdc = FILE:/var/log/krb5-kdc.log
+    admin_server = FILE:/var/log/krb5-kadmind.log

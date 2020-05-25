@@ -1,0 +1,13 @@
+---
+- name: Install Kerberos server packages
+  package:
+    name: "{{ packages[ansible_os_family] }}"
+    state: present
+  vars:
+    packages:
+      Debian:
+        - krb5-kdc
+        - krb5-admin-server
+      RedHat:
+        - krb5-server
+        - krb5-workstation # provides 'klist'

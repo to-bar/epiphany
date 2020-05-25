@@ -1,0 +1,127 @@
+---
+- name: Install Kerberos client
+  include_tasks: kerberos/install-kerberos.yml
+
+- name: Configure Kerberos client
+  include_tasks: kerberos/configure-kerberos.yml
+  vars:
+    kerberos_server: "{{ specification.nfs_server_host }}"
+
+# rpc.svcgssd has been deprecated since RHEL 7.0 and its use in new deployments is discouraged in favor of gssproxy.
+# Ubuntu 18.04 still uses rpc.svcgssd. We want to have gssproxy for both distros.
+- name: Disable rpc-svcgssd service
+  systemd:
+    name: rpc-svcgssd
+    state: stopped
+    enabled: no
+    masked: yes
+  when: ansible_os_family == 'Debian'
+
+- name: Copy gssproxy config file (99-nfs-client.conf)
+  copy:
+    dest: /etc/gssproxy/99-nfs-client.conf
+    src: 99-nfs-client.conf
+    owner: root
+    group: root
+    mode: u=rw,go=
+    backup: yes
+  register: copy_gssproxy_config
+
+- name: Restart gssproxy service
+  systemd:
+    name: gssproxy
+    state: restarted
+  notify: Restart rpc-gssd service
+  when: copy_gssproxy_config.changed
+
+- name: Configure rpc-gssd service
+  block:
+    - name: Configure rpc-gssd service to start after gssproxy service
+      lineinfile:
+        path: /lib/systemd/system/rpc-gssd.service
+        line: After=gssproxy.service
+        insertafter: '^After='
+        backup: yes
+      register: configure_rpc_gssd_unit_1
+      when: ansible_os_family == 'Debian'
+
+    - name: Configure rpc-gssd service to look for keytab in custom location
+      lineinfile:
+        path: /lib/systemd/system/rpc-gssd.service
+        regexp: '^ConditionPathExists=/etc/krb5.keytab'
+        line: ConditionPathExists=/etc/krb5_nfs_client.keytab
+        backup: yes
+      register: configure_rpc_gssd_unit_2
+
+    - name: Run daemon-reload
+      # command module used by purpose since systemd module does not set changed=true for daemon-reload
+      command: systemctl daemon-reload
+      notify: Restart rpc-gssd service
+      when: configure_rpc_gssd_unit_1.changed
+         or configure_rpc_gssd_unit_2.changed
+
+# rpc-gssd must be started with GSS_USE_PROXY="yes"
+- name: Adjust nfs-config service script
+  lineinfile:
+    path: /usr/lib/systemd/scripts/nfs-utils_env.sh
+    line: "{{ item }}"
+    insertbefore: '^\} > /run/sysconfig/nfs-utils'
+    backup: yes
+  register: adjust_nfs_config_script
+  loop:
+    - 'echo GSSDARGS=\"$RPCGSSDARGS\"'
+    - 'echo GSS_USE_PROXY=\"$GSS_USE_PROXY\"'
+  when: ansible_os_family == 'Debian'
+
+- name: Configure NFS common variables
+  lineinfile:
+    path: "{{ nfs.config_file_path[ansible_os_family] }}"
+    regexp: "^{{ item.name }}="
+    line: "{{ item.name }}=\"{{ item.value }}\""
+    backup: yes
+  register: configure_nfs_env_vars
+  loop:
+    - name: GSS_USE_PROXY
+      value: 'yes'
+    - name: RPCGSSDARGS
+      value: '-k /etc/krb5_nfs_client.keytab'
+
+- name: Restart nfs-config service
+  systemd:
+    name: nfs-config
+    state: restarted
+  notify: Restart rpc-gssd service
+  when: adjust_nfs_config_script.changed
+     or configure_nfs_env_vars.changed
+
+- name: Start gssproxy service
+  systemd:
+    name: gssproxy
+    state: started
+  notify: Restart rpc-gssd service
+
+- name: Flush handlers to restart rpc-gssd service
+  meta: flush_handlers
+
+- name: Start rpc-gssd service
+  systemd:
+    name: rpc-gssd
+    state: started
+
+- name: Enable service
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+  loop:
+    - gssproxy
+    - rpc-gssd
+
+# TODO:
+# Step 1: Create a mount point for the NFS host’s shared folder
+# $ sudo mkdir -p /mnt/sharedfolder_client
+
+# Step 2: Mount the shared directory
+# $ sudo mount -o sec=krb5p serverIP:/exportFolder_server /mnt/mountfolder_client
+
+# Step 3: Test the connection
+# Create a file in the export folder on NFS server. Open it from the mount folder on the client machine

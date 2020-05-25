@@ -1,0 +1,9 @@
+---
+- name: Install Kerberos client package
+  package:
+    name: "{{ package[ansible_os_family] }}"
+    state: present
+  vars:
+    package:
+      Debian: krb5-user
+      RedHat: krb5-workstation

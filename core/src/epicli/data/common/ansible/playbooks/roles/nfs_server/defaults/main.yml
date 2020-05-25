@@ -1,4 +1,36 @@
 ---
-nfs_service_name:
-  Debian: nfs-kernel-server
-  RedHat: nfs
+nfs:
+  anonymous:
+    user:
+      Debian: nobody
+      RedHat: nfsnobody
+    group:
+      Debian: nogroup
+      RedHat: nfsnobody
+  paths:
+    nfs_server_config_file:
+      Debian: /etc/default/nfs-kernel-server
+      RedHat: /etc/sysconfig/nfs
+  service:
+    Debian: nfs-kernel-server
+    RedHat: nfs
+
+kerberos:
+  master_db_password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters,digits') }}"
+  paths:
+    database:
+      Debian: /var/lib/krb5kdc/principal
+      RedHat: /var/kerberos/krb5kdc/principal
+    kdc_conf:
+      Debian: /etc/krb5kdc/kdc.conf
+      RedHat: /var/kerberos/krb5kdc/kdc.conf
+    kadm5_acl:
+      Debian: /etc/krb5kdc/kadm5.acl
+      RedHat: /var/kerberos/krb5kdc/kadm5.acl
+  services:
+    Debian:
+      - krb5-kdc
+      - krb5-admin-server
+    RedHat:
+      - krb5kdc
+      - kadmin

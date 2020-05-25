@@ -1,0 +1,26 @@
+---
+# This file is meant to be also used by nfs_client role
+
+# Loops are used by purpose to have principals listed in Ansible output
+- name: Add existing principals to default keytab file
+  block:
+    - name: Check if principal is already in keytab
+      shell: |-
+        test -f /etc/krb5.keytab || exit 0
+        klist -k | grep --word-regexp --only-match '{{ principal }}@{{ kerberos_realm }}'
+      register: grep_keytab
+      changed_when: false
+      failed_when:
+        - grep_keytab.rc != 0
+        - grep_keytab.stderr_lines or grep_keytab.stdout_lines
+      loop_control:
+        loop_var: principal
+      loop: "{{ principals }}"
+
+    - name: Add principal to keytab
+      shell: kadmin.local -q "ktadd -norandkey {{ principal }}" -r {{ kerberos_realm }}
+      when: grep_keytab.results[ansible_loop.index0].stdout == ""
+      loop_control:
+        loop_var: principal
+        extended: yes
+      loop: "{{ principals }}"

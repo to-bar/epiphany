@@ -832,6 +832,26 @@ specification:
         destination_port_range: "2049"
         source_address_prefix: "10.1.0.0/20"
         destination_address_prefix: "0.0.0.0/0"
+      - name: kerberos-traffic-udp
+        description: Allow traffic to Kerberos server (UDP)
+        priority: 304
+        direction: Inbound
+        access: Allow
+        protocol: Udp
+        source_port_range: "*"
+        destination_port_range: "88"
+        source_address_prefix: "10.1.0.0/20"
+        destination_address_prefix: "0.0.0.0/0"
+      - name: kerberos-traffic-tcp
+        description: Allow traffic to Kerberos server (TCP)
+        priority: 305
+        direction: Inbound
+        access: Allow
+        protocol: Tcp
+        source_port_range: "*"
+        destination_port_range: "88"
+        source_address_prefix: "10.1.0.0/20"
+        destination_address_prefix: "0.0.0.0/0"
       - name: out
         description: Allow out
         priority: 101

@@ -1,0 +1,26 @@
+# {{ ansible_managed }}
+
+{# Format:
+/directory host1(options1) host2(options2) host3(options3)
+# See 'man exports' #}
+{% for nfs_export in specification.nfs_exports if (nfs_export.enabled is undefined or nfs_export.enabled) %}
+{#   keys: required: directory, clients; optional: default_options, enabled #}
+{%   set ns = namespace(clients_with_options=[]) %}
+{%   for client in nfs_export.clients %}
+{#     keys: required: hosts; optional: options, kind #}
+{#     'hosts' can be string or list, normalize to list #}
+{%     set client_hosts = client.hosts is string | ternary([client.hosts], client.hosts) %}
+{#     if 'hosts' is defined based on Ansible inventory then convert FQDNs to short hostnames #}
+{%     if client.kind is defined and client.kind == 'ansible_inventory_hostname' %}
+{%       set client_hosts = client_hosts | map('extract', hostvars, 'inventory_hostname_short') | list %}
+{%     endif %}
+{%     if client.options is defined and client.options %}
+{%       set client_options = '(' + client.options|join(',') + ')' %}
+{%       set ns.clients_with_options = ns.clients_with_options + (client_hosts | product([client_options]) | map('join') | list) %}
+{%     else %}
+{%       set ns.clients_with_options = ns.clients_with_options + client_hosts %}
+{%     endif %}
+{%   endfor %}
+{%   set default_options = nfs_export.default_options|default([]) %}
+{{ nfs_export.directory }}{% if default_options %} -{{ default_options|join(',') }}{% endif %} {{ ns.clients_with_options|join(' ') }}
+{% endfor %}

@@ -22,11 +22,15 @@ firewalld
 fping
 gnupg2
 grafana 6.2.5
+gssproxy
 haproxy
 htop
 iftop
 init-system-helpers
 jq
+krb5-admin-server
+krb5-kdc
+krb5-user
 libfontconfig1
 logrotate
 netcat
@@ -133,6 +137,9 @@ python3-slip-dbus
 
 # for vim, issue #869
 libpython3.6
+
+# for gssproxy
+libini-config5
 
 # K8s upgrade v1.12
 kubeadm 1.12.10

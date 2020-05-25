@@ -1,5 +1,5 @@
 ---
-- name: Install NFS server packages
+- name: Install NFS client packages
   package:
     name: "{{ packages[ansible_os_family] }}"
     state: present
@@ -7,7 +7,6 @@
     packages:
       Debian:
         - nfs-common
-        - nfs-kernel-server
         - gssproxy
       RedHat:
         - nfs-utils
