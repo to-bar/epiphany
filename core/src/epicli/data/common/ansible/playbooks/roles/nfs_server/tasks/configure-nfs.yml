@@ -16,31 +16,36 @@
     mode: u=rw,go=r
     backup: yes
 
-- name: Check if directories to be exported exist
-  stat:
-    path: "{{ item }}"
-    get_attributes: no
-    get_checksum: no
-    get_mime: no
-  register: nfs_export_dirs_stat
-  when: item.enabled is undefined or item.enabled
-  loop: "{{ specification.nfs_exports }}"
-  loop_control:
-    label: "{{ item.directory }}"
+- name: Create directories to be exported if don't exist
+  block:
+    - name: Check if directories to be exported exist
+      stat:
+        path: "{{ item.directory }}"
+        get_attributes: no
+        get_checksum: no
+        get_mime: no
+      register: nfs_export_dirs_stat
+      loop: "{{ enabled_exports }}"
+      loop_control:
+        label: "{{ item.directory }}"
 
-- name: Create directories configured to be exported if don't exist
-  file:
-    path: "{{ item.directory }}"
-    state: directory
-    owner: "{{ nfs.anonymous.user[ansible_os_family] }}"
-    group: "{{ nfs.anonymous.group[ansible_os_family] }}"
-  when:
-    - item.enabled is undefined or item.enabled
-    - nfs_export_dirs_stat.results[ansible_loop.index0].stat.isdir is undefined
-      or not nfs_export_dirs_stat.results[ansible_loop.index0].stat.isdir
-  loop: "{{ specification.nfs_exports }}"
-  loop_control:
-    label: "{{ item.directory }}"
+    - name: Create directories to be exported if don't exist
+      file:
+        path: "{{ item.directory }}"
+        state: directory
+        owner: "{{ nfs.anonymous.user[ansible_os_family] }}"
+        group: "{{ nfs.anonymous.group[ansible_os_family] }}"
+      when:
+        - nfs_export_dirs_stat.results[ansible_loop.index0].stat.isdir is undefined
+          or not nfs_export_dirs_stat.results[ansible_loop.index0].stat.isdir
+      loop: "{{ enabled_exports }}"
+      loop_control:
+        label: "{{ item.directory }}"
+  vars:
+    enabled_exports: >-
+      {{ specification.nfs_exports | selectattr('enabled', 'undefined') | list +
+         specification.nfs_exports | selectattr('enabled', 'defined')
+                                   | rejectattr("enabled", "equalto", False) | list }}
 
 # rpc.svcgssd has been deprecated since RHEL 7.0 and its use in new deployments is discouraged in favor of gssproxy.
 # Ubuntu 18.04 still uses rpc.svcgssd. We want to have gssproxy for both distros.
@@ -90,7 +95,7 @@
     - rpc-gssd
     - "{{ nfs.service[ansible_os_family] }}"
 
-- name: Enable service
+- name: Enable services
   systemd:
     name: "{{ item }}"
     enabled: yes

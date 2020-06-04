@@ -1,5 +1,12 @@
 ---
 nfs:
+  anonymous:
+    user:
+      Debian: nobody
+      RedHat: nfsnobody
+    group:
+      Debian: nogroup
+      RedHat: nfsnobody
   config_file_path:
     Debian: /etc/default/nfs-common
     RedHat: /etc/sysconfig/nfs

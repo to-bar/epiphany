@@ -3,30 +3,49 @@ title: NFS Server Config
 name: default
 specification:
   nfs_exports: # export definitions to be created in /etc/exports
-    - directory: /nfs_share/public # export point, client mountable path
-      default_options: [ro, sync, no_subtree_check]
+    - name: Cluster-wide public read-only
+      directory: /nfs_share/public/read_only # export point, client mountable path
+      default_options: [ro, sync, no_subtree_check, sec=sys]
       clients: # hosts or networks allowed to mount the export
         - hosts: "{{ groups.all }}"
           kind: ansible_inventory_hostname
       enabled: yes
-    # TODO: temporary entries for testing different settings
-    - directory: /nfs_share/private
-      default_options: [rw, sync, no_subtree_check, 'sec=krb5p']
+    - name: Cluster-wide public writable
+      directory: /nfs_share/public/writable
+      default_options: [rw, sync, no_subtree_check, sec=sys]
+      clients:
+        - hosts: "{{ groups.all }}"
+          kind: ansible_inventory_hostname
+      enabled: yes
+    - name: Cluster-wide Kerberos secured read-only
+      directory: /nfs_share/private/read_only
+      default_options: [ro, sync, no_subtree_check, sec=krb5p]
+      clients:
+        - hosts: "{{ groups.all }}"
+          kind: ansible_inventory_hostname
+      enabled: yes
+    - name: Cluster-wide Kerberos secured writable
+      directory: /nfs_share/private/writable
+      default_options: [rw, sync, no_subtree_check, sec=krb5p]
+      clients:
+        - hosts: "{{ groups.all }}"
+          kind: ansible_inventory_hostname
+      enabled: yes
+    # Examples:
+    - name: Kubernetes-wide Kerberos secured mixed
+      directory: /nfs_share/examples/k8s
+      default_options: [sync, no_subtree_check, sec=sys:krb5p]
       clients:
         - hosts: "{{ groups.kubernetes_master }}"
           kind: ansible_inventory_hostname
+          options: [ro]
         - hosts: "{{ groups.kubernetes_node }}"
-      enabled: yes
-    - directory: /nfs_share/public/subdir
+          kind: ansible_inventory_hostname
+          options: [rw]
+      enabled: no
+    - name: Single host Kerberos secured without kind
+      directory: /nfs_share/examples/single_host
       clients:
         - hosts: "{{ groups.kubernetes_master[0] }}"
-          options: [rw, sync, no_subtree_check, 'sec=sys:krb5:krb5i:krb5p']
-          kind: ansible_inventory_hostname
-        - hosts: "{{ groups.kubernetes_node }}"
-      enabled: yes
-    - directory: /kerberos_share
-      clients:
-        - hosts: "{{ groups.all }}"
-          options: [rw, sync, no_subtree_check, 'sec=krb5p']
-          kind: ansible_inventory_hostname
-      enabled: yes
+          options: [rw, sync, no_subtree_check, sec=sys:krb5p]
+      enabled: no

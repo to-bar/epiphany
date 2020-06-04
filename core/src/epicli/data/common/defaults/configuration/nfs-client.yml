@@ -4,7 +4,23 @@ name: default
 specification:
   nfs_server_host: "{{ groups.nfs_server[0] }}" # hostname from inventory (Epiphany managed host is required)
   mounts:
-    - name: Public share
-      mount_point: /mnt/nfs_public
-      mount_options: defaults # see man fstab(5)
+    - name: Public read-only
+      export_point: /nfs_share/public/read_only # export defined on server in /etc/exports
+      mount_point: /mnt/nfs_public_ro
+      mount_options: vers=4.2,sec=sys # see man fstab(5)
+      enabled: yes
+    - name: Public writable
+      export_point: /nfs_share/public/writable
+      mount_point: /mnt/nfs_public_rw
+      mount_options: vers=4.2,sec=sys
+      enabled: yes
+    - name: Private read-only
+      export_point: /nfs_share/private/read_only
+      mount_point: /mnt/nfs_private_ro
+      mount_options: vers=4.2,sec=krb5p
+      enabled: yes
+    - name: Private writable
+      export_point: /nfs_share/private/writable
+      mount_point: /mnt/nfs_private_rw
+      mount_options: vers=4.2,sec=krb5p
       enabled: yes

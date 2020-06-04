@@ -108,7 +108,7 @@
     name: rpc-gssd
     state: started
 
-- name: Enable service
+- name: Enable services
   systemd:
     name: "{{ item }}"
     enabled: yes
@@ -116,12 +116,45 @@
     - gssproxy
     - rpc-gssd
 
-# TODO:
-# Step 1: Create a mount point for the NFS host’s shared folder
-# $ sudo mkdir -p /mnt/sharedfolder_client
+- name: Mount NFS shares
+  block:
+    - name: Check if mount points exist
+      stat:
+        path: "{{ item.mount_point }}"
+        get_attributes: no
+        get_checksum: no
+        get_mime: no
+      register: mount_point_dir_stat
+      loop: "{{ enabled_mounts }}"
+      loop_control:
+        label: "{{ item.mount_point }}"
 
-# Step 2: Mount the shared directory
-# $ sudo mount -o sec=krb5p serverIP:/exportFolder_server /mnt/mountfolder_client
+    - name: Create mount point directories if don't exist
+      file:
+        path: "{{ item.mount_point }}"
+        state: directory
+        owner: "{{ admin_user.name }}"
+        group: "{{ admin_user.name }}"
+      when:
+        - mount_point_dir_stat.results[ansible_loop.index0].stat.isdir is undefined
+          or not mount_point_dir_stat.results[ansible_loop.index0].stat.isdir
+      loop: "{{ enabled_mounts }}"
+      loop_control:
+        label: "{{ item.mount_point }}"
 
-# Step 3: Test the connection
-# Create a file in the export folder on NFS server. Open it from the mount folder on the client machine
+    - name: Mount NFS shares
+      mount:
+        fstype: nfs
+        opts: "{{ item.mount_options }}"
+        dump: '0' # TODO: Check if this option can be useful (see fstab(5))
+        passno: '0' # TODO: Check if this option can be useful (see fstab(5))
+        state: mounted
+        src: "{{ nfs_server }}:{{ item.export_point }}"
+        path: "{{ item.mount_point }}"
+      loop: "{{ enabled_mounts }}"
+  vars:
+    nfs_server: "{{ specification.nfs_server_host }}"
+    enabled_mounts: >-
+      {{ specification.mounts | selectattr('enabled', 'undefined') | list +
+         specification.mounts | selectattr('enabled', 'defined')
+                              | rejectattr("enabled", "equalto", False) | list }}
