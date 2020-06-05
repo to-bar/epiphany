@@ -1,6 +1,11 @@
 ---
-- name: Include NFS client installation tasks
-  include_tasks: install-nfs.yml
+- name: Install and configure NFS client
+  block:
+    - name: Include NFS client installation tasks
+      include_tasks: install-nfs.yml
 
-- name: Include NFS client configuration tasks
-  include_tasks: configure-nfs.yml
+    - name: Include NFS client configuration tasks
+      include_tasks: configure-nfs.yml
+  when:
+    - specification.nfs_server_host is defined
+    - specification.nfs_server_host in groups.all
