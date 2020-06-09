@@ -140,14 +140,13 @@
           or not mount_point_dir_stat.results[ansible_loop.index0].stat.isdir
       loop: "{{ enabled_mounts }}"
       loop_control:
+        extended: yes
         label: "{{ item.mount_point }}"
 
     - name: Mount NFS shares
       mount:
         fstype: nfs
         opts: "{{ item.mount_options }}"
-        dump: '0' # TODO: Check if this option can be useful (see fstab(5))
-        passno: '0' # TODO: Check if this option can be useful (see fstab(5))
         state: mounted
         src: "{{ nfs_server }}:{{ item.export_point }}"
         path: "{{ item.mount_point }}"

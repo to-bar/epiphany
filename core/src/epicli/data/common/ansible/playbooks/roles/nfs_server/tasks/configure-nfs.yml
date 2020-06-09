@@ -40,6 +40,7 @@
           or not nfs_export_dirs_stat.results[ansible_loop.index0].stat.isdir
       loop: "{{ enabled_exports }}"
       loop_control:
+        extended: yes
         label: "{{ item.directory }}"
   vars:
     enabled_exports: >-
