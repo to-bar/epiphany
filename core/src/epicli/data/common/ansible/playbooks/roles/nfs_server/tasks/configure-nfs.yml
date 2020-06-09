@@ -48,6 +48,45 @@
          specification.nfs_exports | selectattr('enabled', 'defined')
                                    | rejectattr("enabled", "equalto", False) | list }}
 
+# Disable NFSv2 and NFSv3 to minimize number of open ports since NFSv4 does not require rpcbind service
+# RHEL: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/storage_administration_guide/nfs-serverconfig#nfs4-only
+# Debian: https://wiki.debian.org/NFSServerSetup
+- name: Disable NFSv2 and NFSv3
+  block:
+    - name: Configure NFS server to not support NFSv2 and NFSv3
+      blockinfile:
+        path: "{{ nfs.paths.nfs_server_config_file[ansible_os_family] }}"
+        marker: "\n# {mark} ANSIBLE MANAGED BLOCK: Disable NFSv2 and NFSv3"
+        block: "{{ block[ansible_os_family] }}"
+        backup: yes
+      register: configure_nfs_server_vars
+      vars:
+        block:
+          Debian: |
+            RPCNFSDOPTS="-N 2 -N 3 -U"
+            RPCMOUNTDOPTS="--manage-gids -N 2 -N 3"
+          RedHat: |
+            RPCNFSDARGS="-N 2 -N 3 -U"
+            RPCMOUNTDOPTS="-N 2 -N 3"
+
+    - name: Mask units not needed by NFSv4
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+        masked: yes
+      register: mask_nfs_v3_units
+      loop:
+        - rpc-statd.service
+        - rpcbind.service
+        - rpcbind.socket
+
+    - name: Restart NFS service
+      systemd:
+        name: "{{ nfs.service[ansible_os_family] }}"
+        state: restarted
+      when: configure_nfs_server_vars.changed
+         or mask_nfs_v3_units.changed
+
 # rpc.svcgssd has been deprecated since RHEL 7.0 and its use in new deployments is discouraged in favor of gssproxy.
 # Ubuntu 18.04 still uses rpc.svcgssd. We want to have gssproxy for both distros.
 - name: Disable rpc-svcgssd service

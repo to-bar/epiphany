@@ -69,8 +69,8 @@
     backup: yes
   register: adjust_nfs_config_script
   loop:
-    - 'echo GSSDARGS=\"$RPCGSSDARGS\"'
-    - 'echo GSS_USE_PROXY=\"$GSS_USE_PROXY\"'
+    - echo GSSDARGS=\"$RPCGSSDARGS\"
+    - echo GSS_USE_PROXY=\"$GSS_USE_PROXY\"
   when: ansible_os_family == 'Debian'
 
 - name: Configure NFS common variables
@@ -84,7 +84,7 @@
     - name: GSS_USE_PROXY
       value: 'yes'
     - name: RPCGSSDARGS
-      value: '-k /etc/krb5_nfs_client.keytab'
+      value: -k /etc/krb5_nfs_client.keytab
 
 - name: Restart nfs-config service
   systemd:
