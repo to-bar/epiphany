@@ -2,7 +2,7 @@ kind: configuration/nfs-client
 title: NFS Client Config
 name: default
 specification:
-  nfs_server_host: "{{ groups.nfs_server[0] }}" # hostname from inventory (Epiphany managed host is required)
+  nfs_server_host: "{{ groups.nfs_server[0] | default(None) }}" # hostname from inventory (Epiphany managed host is required)
   mounts:
     - name: Public read-only
       export_point: /nfs_share/public/read_only # export defined on server in /etc/exports
@@ -17,10 +17,10 @@ specification:
     - name: Private read-only
       export_point: /nfs_share/private/read_only
       mount_point: /mnt/nfs_private_ro
-      mount_options: vers=4.2,sec=krb5p
+      mount_options: vers=4.2,sec=sys,port=2323
       enabled: yes
     - name: Private writable
       export_point: /nfs_share/private/writable
       mount_point: /mnt/nfs_private_rw
-      mount_options: vers=4.2,sec=krb5p
+      mount_options: vers=4.2,sec=sys,port=2323
       enabled: yes

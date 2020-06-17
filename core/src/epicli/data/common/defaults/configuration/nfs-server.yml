@@ -5,6 +5,7 @@ specification:
   nfs_exports: # export definitions to be created in /etc/exports
     - name: Cluster-wide public read-only
       directory: /nfs_share/public/read_only # export point, client mountable path
+      owner: "{{ admin_user.name }}"
       default_options: [ro, sync, no_subtree_check, sec=sys]
       clients: # hosts or networks allowed to mount the export
         - hosts: "{{ groups.all }}"
@@ -12,29 +13,35 @@ specification:
       enabled: yes
     - name: Cluster-wide public writable
       directory: /nfs_share/public/writable
+      owner: "{{ admin_user.name }}"
       default_options: [rw, sync, no_subtree_check, sec=sys]
       clients:
         - hosts: "{{ groups.all }}"
           kind: ansible_inventory_hostname
       enabled: yes
-    - name: Cluster-wide Kerberos secured read-only
+    - name: Cluster-wide over TLS read-only
       directory: /nfs_share/private/read_only
-      default_options: [ro, sync, no_subtree_check, sec=krb5p]
+      owner: "{{ admin_user.name }}"
+      encryption: true
+      default_options: [ro, sync, no_subtree_check, sec=sys]
       clients:
         - hosts: "{{ groups.all }}"
           kind: ansible_inventory_hostname
       enabled: yes
-    - name: Cluster-wide Kerberos secured writable
+    - name: Cluster-wide over TLS writable
       directory: /nfs_share/private/writable
-      default_options: [rw, sync, no_subtree_check, sec=krb5p]
+      owner: "{{ admin_user.name }}"
+      encryption: true
+      default_options: [rw, sync, no_subtree_check, sec=sys]
       clients:
         - hosts: "{{ groups.all }}"
           kind: ansible_inventory_hostname
       enabled: yes
     # Examples:
-    - name: Kubernetes-wide Kerberos secured mixed
+    - name: Kubernetes-wide over TLS mixed
       directory: /nfs_share/examples/k8s
-      default_options: [sync, no_subtree_check, sec=sys:krb5p]
+      encryption: true
+      default_options: [sync, no_subtree_check, sec=sys]
       clients:
         - hosts: "{{ groups.kubernetes_master }}"
           kind: ansible_inventory_hostname
@@ -43,9 +50,10 @@ specification:
           kind: ansible_inventory_hostname
           options: [rw]
       enabled: no
-    - name: Single host Kerberos secured without kind
+    - name: Single host over TLS without kind
       directory: /nfs_share/examples/single_host
+      encryption: true
       clients:
         - hosts: "{{ groups.kubernetes_master[0] }}"
-          options: [rw, sync, no_subtree_check, sec=sys:krb5p]
+          options: [rw, sync, no_subtree_check, sec=sys]
       enabled: no
