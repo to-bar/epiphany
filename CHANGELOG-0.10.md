@@ -22,6 +22,7 @@
 - [#2066](https://github.com/epiphany-platform/epiphany/issues/2066) - [CentOS] download-requirements.sh fails on extracting tar with backed up repos
 - [#2067](https://github.com/epiphany-platform/epiphany/issues/2067) - [CentOS] epicli fails on task "repository : Wait for yum lock to be released" on CentOS Minimal
 - [#1844](https://github.com/epiphany-platform/epiphany/issues/1844) - Default Password in Open Distro Elasticsearch, Filebeat, Kibana and Grafana
+- [#1844](https://github.com/epiphany-platform/epiphany/issues/1844) - Default password in Open Distro for Elasticsearch, Filebeat, Kibana and Grafana
 
 ### Updated
 
