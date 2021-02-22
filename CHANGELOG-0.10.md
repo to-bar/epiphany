@@ -18,7 +18,6 @@
 - [#1824](https://github.com/epiphany-platform/epiphany/issues/1824) - offline installation fails with error 'yum lockfile is held by another process' (Azure/RHEL)
 - [#2069](https://github.com/epiphany-platform/epiphany/issues/2069) - [CentOS] epicli fails on task [repository : Create epirepo repository]
 - [#2066](https://github.com/epiphany-platform/epiphany/issues/2066) - [CentOS] download-requirements.sh fails on extracting tar with backed up repos
-- [#1844](https://github.com/epiphany-platform/epiphany/issues/1844) - Default Password in Open Distro Elasticsearch, Filebeat, Kibana and Grafana
 - [#1844](https://github.com/epiphany-platform/epiphany/issues/1844) - Default password in Open Distro for Elasticsearch, Filebeat, Kibana and Grafana
 
 ### Updated
