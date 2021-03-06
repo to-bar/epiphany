@@ -9,8 +9,15 @@ versions:
     elasticsearch_oss: "7.9.1"
     opendistro: "1.10.1*"
 specification:
-  es_user: admin
-  es_password: admin
+  api:
+    auth:
+      method: tls  # basic/tls
+      basic:
+        es_user: admin
+        es_password: PASSWORD_TO_CHANGE
+      tls:
+        client_cert: /etc/elasticsearch/kirk.pem
+        client_key: /etc/elasticsearch/kirk-key.pem
   cluster_name: EpiphanyElastic
   clustered: True
   paths:

@@ -49,11 +49,11 @@
 
 - name: Change default users
   when: not (context is defined and context == 'upgrade')
-  block: 
+  block:
     - name: Set helper facts
       set_fact:
         elasticsearch_endpoint: >-
-          https://{{ ansible_default_ipv4.address }}:9200
+          https://{{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}:9200
       vars:
         uri_template: &uri
           client_cert: /etc/elasticsearch/kirk.pem
@@ -128,7 +128,7 @@
       delay: 1
       run_once: true
       when: specification.kibanaserver_user_active
-      
+
     - name: Check if default logstash user exists
       uri:
         <<: *uri
